@@ -19,12 +19,7 @@ class UserRead(BaseModel):
     role: str
 
 
-class UserUpdate(BaseModel, extra=Extra.allow):
-    # we use extra=Extra.allow in the model
-    # it allows for extra fields passed in HTTP request body
-    # so we don't need to specify all fields
-    # if any new fields are added to the User model over the time
-    # it's super useful feature!
+class UserUpdate(BaseModel):
     first_name: Union[str, None] = None
     last_name: Union[str, None] = None
     phone_number: Union[str, None] = None
@@ -38,8 +33,10 @@ def patch_profile(
 ):
     db_user = get_user_by_username(db, current_user.username)
 
-    for var, value in user.dict().items():
-        if value:
+    ALLOWED_PROFILE_FIELDS = {"first_name", "last_name", "phone_number"}
+
+    for var, value in user.model_dump(exclude_unset=True).items():
+        if var in ALLOWED_PROFILE_FIELDS:
             setattr(db_user, var, value)
 
     db.add(db_user)
