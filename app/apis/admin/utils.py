@@ -1,8 +1,12 @@
 import subprocess
 
+ALLOWED_DF_ARGS = {"-h", "-T", "-a", "--total"}
 
 def get_disk_usage(parameters: str):
-    command = "df -h " + parameters
+    
+    safe_args = [arg for arg in parameters.split() if arg in ALLOWED_DF_ARGS]
+    
+    command = ["df"] + safe_args
 
     try:
         result = subprocess.run(
