@@ -4,12 +4,31 @@ import requests
 from apis.menu import schemas
 from db.models import MenuItem, OrderItem
 from fastapi import HTTPException
+from urllib.parse import urlparse
 
 
 def _image_url_to_base64(image_url: str):
-    response = requests.get(image_url, stream=True)
-    encoded_image = base64.b64encode(response.content).decode()
+    parsed_url = urlparse(image_url)
+    domain = parsed_url.hostname or ""
 
+    # solo admitir 'localhost'
+    allowed_domains = ["localhost", "127.0.0.1"]
+    if domain not in allowed_domains:
+        raise HTTPException(status_code=400, detail="Invalid image URL domain")
+    
+    # admitir solo extensiones de imagen especificas
+    allowed_extensions = [".jpg", ".jpeg", ".png"]
+    if not parsed_url.path.lower().endswith(tuple(allowed_extensions)):
+        raise HTTPException(status_code=400, detail="Invalid imagetype")
+
+    response = requests.get(image_url, stream=True)
+    content_type = response.hearders.get("content-type", "")
+
+    # asegurar que el contenido es una imagen
+    if not content_type.startswith("image"):
+        raise HTTPException(status_code=400, detail="URL does not point to an image")
+    
+    encoded_image = base64.b64encode(response.content).decode()
     return encoded_image
 
 
